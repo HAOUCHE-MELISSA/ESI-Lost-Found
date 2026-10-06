@@ -1,0 +1,6 @@
+{
+  "name": "ESI Lost & Found",
+  "description": "Campus Lost & Found platform for ESI connecting students with recovered items stored at the physical Lost & Found Office through hybrid visual and semantic matching.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

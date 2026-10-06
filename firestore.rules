@@ -1,0 +1,319 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'haouchemelissa2007@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'email', 'photoUrl', 'phone', 'role', 'domainVerified', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 180 &&
+        (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 1000)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 40)) &&
+        (!('domainVerified' in data) || data.domainVerified is bool) &&
+        (data.role == 'student' || (data.role == 'admin' && isAdmin())) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFoundItem(data) {
+      return data.keys().hasAll(['id', 'reporterId', 'title', 'category', 'generalDescription', 'color', 'brand', 'locationFound', 'dateFound', 'status', 'custodyState', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'reporterId', 'title', 'category', 'generalDescription', 'color', 'brand', 'model', 'publicCharacteristics', 'locationFound', 'dateFound', 'timeFound', 'dateSubmittedToOffice', 'status', 'custodyState', 'photoUrl', 'verificationQuestion', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.reporterId) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 140 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.generalDescription is string && data.generalDescription.size() >= 3 && data.generalDescription.size() <= 1200 &&
+        data.color is string && data.color.size() >= 1 && data.color.size() <= 80 &&
+        data.brand is string && data.brand.size() <= 100 &&
+        (!('model' in data) || (data.model is string && data.model.size() <= 100)) &&
+        (!('publicCharacteristics' in data) || (data.publicCharacteristics is string && data.publicCharacteristics.size() <= 600)) &&
+        data.locationFound is string && data.locationFound.size() >= 1 && data.locationFound.size() <= 120 &&
+        data.dateFound is string && data.dateFound.size() >= 1 && data.dateFound.size() <= 60 &&
+        (!('timeFound' in data) || (data.timeFound is string && data.timeFound.size() <= 60)) &&
+        (!('dateSubmittedToOffice' in data) || (data.dateSubmittedToOffice is string && data.dateSubmittedToOffice.size() <= 60)) &&
+        data.status in ['FOUND', 'IN LOST & FOUND OFFICE', 'MATCH FOUND', 'CLAIM PENDING', 'RETURNED', 'EXPIRED'] &&
+        data.custodyState in ['STILL_WITH_FINDER', 'AT_OFFICE'] &&
+        (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 350000)) &&
+        (!('verificationQuestion' in data) || (data.verificationQuestion is string && data.verificationQuestion.size() <= 300)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFoundItemPrivate(data) {
+      return data.keys().hasAll(['itemId', 'secretCharacteristics', 'storageLocation', 'adminNotes', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['itemId', 'secretCharacteristics', 'storageLocation', 'adminNotes', 'finderEmail', 'createdAt', 'updatedAt']) &&
+        isValidId(data.itemId) &&
+        data.secretCharacteristics is string && data.secretCharacteristics.size() <= 1000 &&
+        data.storageLocation is string && data.storageLocation.size() <= 160 &&
+        data.adminNotes is string && data.adminNotes.size() <= 1500 &&
+        (!('finderEmail' in data) || (data.finderEmail is string && data.finderEmail.size() <= 180)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidLostReport(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'category', 'description', 'color', 'brand', 'locationLost', 'dateLost', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'userName', 'userEmail', 'title', 'category', 'description', 'color', 'brand', 'model', 'distinguishingCharacteristics', 'locationLost', 'dateLost', 'photoUrl', 'status', 'claimStatus', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.userId) &&
+        (!('userName' in data) || (data.userName is string && data.userName.size() <= 120)) &&
+        (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 180)) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 140 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.description is string && data.description.size() >= 3 && data.description.size() <= 1200 &&
+        data.color is string && data.color.size() >= 1 && data.color.size() <= 80 &&
+        data.brand is string && data.brand.size() <= 100 &&
+        (!('model' in data) || (data.model is string && data.model.size() <= 100)) &&
+        (!('distinguishingCharacteristics' in data) || (data.distinguishingCharacteristics is string && data.distinguishingCharacteristics.size() <= 800)) &&
+        data.locationLost is string && data.locationLost.size() >= 1 && data.locationLost.size() <= 120 &&
+        data.dateLost is string && data.dateLost.size() >= 1 && data.dateLost.size() <= 80 &&
+        (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 350000)) &&
+        data.status in ['SEARCHING', 'POSSIBLE MATCH', 'MATCH CONFIRMED', 'RETURNED', 'CLOSED'] &&
+        (!('claimStatus' in data) || (data.claimStatus is string && data.claimStatus.size() <= 40)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidMatchRecord(data) {
+      return data.keys().hasAll(['id', 'lostReportId', 'foundItemId', 'studentId', 'overallScore', 'confidenceLabel', 'explanationSummary', 'reasons', 'adminStatus', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'lostReportId', 'foundItemId', 'studentId', 'overallScore', 'visualSimilarity', 'textSimilarity', 'locationSimilarity', 'timeSimilarity', 'confidenceLabel', 'explanationSummary', 'reasons', 'verificationPrompt', 'adminStatus', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.lostReportId) &&
+        isValidId(data.foundItemId) &&
+        isValidId(data.studentId) &&
+        data.overallScore is number && data.overallScore >= 0 && data.overallScore <= 100 &&
+        (!('visualSimilarity' in data) || (data.visualSimilarity is number && data.visualSimilarity >= 0 && data.visualSimilarity <= 100)) &&
+        (!('textSimilarity' in data) || (data.textSimilarity is number && data.textSimilarity >= 0 && data.textSimilarity <= 100)) &&
+        (!('locationSimilarity' in data) || (data.locationSimilarity is number && data.locationSimilarity >= 0 && data.locationSimilarity <= 100)) &&
+        (!('timeSimilarity' in data) || (data.timeSimilarity is number && data.timeSimilarity >= 0 && data.timeSimilarity <= 100)) &&
+        data.confidenceLabel is string && data.confidenceLabel.size() <= 80 &&
+        data.explanationSummary is string && data.explanationSummary.size() <= 600 &&
+        data.reasons is list && data.reasons.size() <= 10 && (data.reasons.size() == 0 || (data.reasons[0] is string && data.reasons[0].size() <= 200)) &&
+        (!('verificationPrompt' in data) || (data.verificationPrompt is string && data.verificationPrompt.size() <= 300)) &&
+        data.adminStatus in ['PENDING_REVIEW', 'APPROVED', 'REJECTED'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidClaimRecord(data) {
+      return data.keys().hasAll(['id', 'lostReportId', 'foundItemId', 'studentId', 'studentName', 'studentEmail', 'verificationQuestion', 'verificationAnswer', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'lostReportId', 'foundItemId', 'matchId', 'studentId', 'studentName', 'studentEmail', 'verificationQuestion', 'verificationAnswer', 'additionalProof', 'suspiciousFlag', 'status', 'adminFeedback', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.lostReportId) &&
+        isValidId(data.foundItemId) &&
+        (!('matchId' in data) || isValidId(data.matchId)) &&
+        isValidId(data.studentId) &&
+        data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 120 &&
+        data.studentEmail is string && data.studentEmail.size() >= 3 && data.studentEmail.size() <= 180 &&
+        data.verificationQuestion is string && data.verificationQuestion.size() <= 300 &&
+        data.verificationAnswer is string && data.verificationAnswer.size() >= 2 && data.verificationAnswer.size() <= 1000 &&
+        (!('additionalProof' in data) || (data.additionalProof is string && data.additionalProof.size() <= 1000)) &&
+        (!('suspiciousFlag' in data) || data.suspiciousFlag is bool) &&
+        data.status in ['PENDING', 'APPROVED', 'REJECTED', 'RETURNED'] &&
+        (!('adminFeedback' in data) || (data.adminFeedback is string && data.adminFeedback.size() <= 600)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidNotificationRecord(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'message', 'type', 'read', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'title', 'message', 'type', 'relatedReportId', 'relatedMatchId', 'read', 'createdAt', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.userId) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 600 &&
+        data.type in ['MATCH_FOUND', 'CLAIM_APPROVED', 'CLAIM_REJECTED', 'ITEM_RETURNED'] &&
+        (!('relatedReportId' in data) || isValidId(data.relatedReportId)) &&
+        (!('relatedMatchId' in data) || isValidId(data.relatedMatchId)) &&
+        data.read is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Rules
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(adminId);
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.uid == request.auth.uid);
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUserProfile(incoming()) &&
+        incoming().uid == userId &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(userId) && isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(userId) && incoming().role == existing().role && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'photoUrl', 'phone', 'domainVerified', 'updatedAt']))
+        );
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /found_items/{itemId} {
+      allow get: if isVerifiedUser() && isValidId(itemId);
+      allow list: if isVerifiedUser() && (
+        isAdmin() ||
+        resource.data.reporterId == request.auth.uid ||
+        resource.data.status in ['FOUND', 'IN LOST & FOUND OFFICE', 'MATCH FOUND', 'CLAIM PENDING', 'RETURNED']
+      );
+      allow create: if isVerifiedUser() && isValidId(itemId) && isValidFoundItem(incoming()) &&
+        incoming().id == itemId &&
+        (incoming().reporterId == request.auth.uid || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(itemId) && isValidFoundItem(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().reporterId == existing().reporterId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (existing().status != 'RETURNED' && existing().status != 'EXPIRED' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'custodyState', 'dateSubmittedToOffice', 'updatedAt']))
+        );
+      allow delete: if isValidId(itemId) && isAdmin();
+    }
+
+    match /found_items_private/{itemId} {
+      allow get: if isValidId(itemId) && (isAdmin() || (isVerifiedUser() && resource.data.finderEmail == request.auth.token.email));
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser() && isValidId(itemId) && isValidFoundItemPrivate(incoming()) &&
+        incoming().itemId == itemId &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        existsAfter(/databases/$(database)/documents/found_items/$(itemId));
+      allow update: if isValidId(itemId) && isValidFoundItemPrivate(incoming()) &&
+        incoming().itemId == existing().itemId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow delete: if isValidId(itemId) && isAdmin();
+    }
+
+    match /lost_reports/{reportId} {
+      allow get: if isValidId(reportId) && (isOwner(resource.data.userId) || isAdmin());
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isVerifiedUser() && isValidId(reportId) && isValidLostReport(incoming()) &&
+        incoming().id == reportId &&
+        (incoming().userId == request.auth.uid || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(reportId) && isValidLostReport(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(existing().userId) && existing().status != 'RETURNED' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'claimStatus', 'description', 'distinguishingCharacteristics', 'updatedAt']))
+        );
+      allow delete: if isValidId(reportId) && (isOwner(resource.data.userId) || isAdmin());
+    }
+
+    match /matches/{matchId} {
+      allow get: if isValidId(matchId) && (isOwner(resource.data.studentId) || isAdmin());
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.studentId == request.auth.uid);
+      allow create: if isVerifiedUser() && isValidId(matchId) && isValidMatchRecord(incoming()) &&
+        incoming().id == matchId &&
+        (incoming().studentId == request.auth.uid || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/lost_reports/$(incoming().lostReportId)) &&
+        exists(/databases/$(database)/documents/found_items/$(incoming().foundItemId));
+      allow update: if isVerifiedUser() && isValidId(matchId) && isValidMatchRecord(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().lostReportId == existing().lostReportId &&
+        incoming().foundItemId == existing().foundItemId &&
+        incoming().studentId == existing().studentId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(existing().studentId) && incoming().diff(existing()).affectedKeys().hasOnly(['adminStatus', 'updatedAt']))
+        );
+      allow delete: if isValidId(matchId) && isAdmin();
+    }
+
+    match /claims/{claimId} {
+      allow get: if isValidId(claimId) && (isOwner(resource.data.studentId) || isAdmin());
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.studentId == request.auth.uid);
+      allow create: if isVerifiedUser() && isValidId(claimId) && isValidClaimRecord(incoming()) &&
+        incoming().id == claimId &&
+        incoming().studentId == request.auth.uid &&
+        incoming().status == 'PENDING' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/lost_reports/$(incoming().lostReportId)) &&
+        exists(/databases/$(database)/documents/found_items/$(incoming().foundItemId));
+      allow update: if isVerifiedUser() && isValidId(claimId) && isValidClaimRecord(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().lostReportId == existing().lostReportId &&
+        incoming().foundItemId == existing().foundItemId &&
+        incoming().studentId == existing().studentId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow delete: if isValidId(claimId) && isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && (isOwner(resource.data.userId) || isAdmin());
+      allow list: if isVerifiedUser() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isVerifiedUser() && isValidId(notificationId) && isValidNotificationRecord(incoming()) &&
+        incoming().id == notificationId &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(notificationId) && isValidNotificationRecord(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(existing().userId) && incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt']))
+        );
+      allow delete: if isValidId(notificationId) && (isOwner(resource.data.userId) || isAdmin());
+    }
+  }
+}

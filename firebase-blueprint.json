@@ -1,0 +1,204 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Student or Admin user profile with isolated PII access.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 180 },
+        "photoUrl": { "type": "string", "maxLength": 1000 },
+        "phone": { "type": "string", "maxLength": 40 },
+        "role": { "type": "string", "enum": ["student", "admin"], "maxLength": 20 },
+        "domainVerified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "role", "createdAt", "updatedAt"]
+    },
+    "FoundItem": {
+      "title": "FoundItem",
+      "description": "Found item record managed by the ESI Lost & Found Office.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "reporterId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "category": { "type": "string", "maxLength": 60 },
+        "generalDescription": { "type": "string", "minLength": 3, "maxLength": 1200 },
+        "color": { "type": "string", "maxLength": 80 },
+        "brand": { "type": "string", "maxLength": 100 },
+        "model": { "type": "string", "maxLength": 100 },
+        "publicCharacteristics": { "type": "string", "maxLength": 600 },
+        "locationFound": { "type": "string", "maxLength": 120 },
+        "dateFound": { "type": "string", "maxLength": 60 },
+        "timeFound": { "type": "string", "maxLength": 60 },
+        "dateSubmittedToOffice": { "type": "string", "maxLength": 60 },
+        "status": {
+          "type": "string",
+          "enum": ["FOUND", "IN LOST & FOUND OFFICE", "MATCH FOUND", "CLAIM PENDING", "RETURNED", "EXPIRED"],
+          "maxLength": 40
+        },
+        "custodyState": {
+          "type": "string",
+          "enum": ["STILL_WITH_FINDER", "AT_OFFICE"],
+          "maxLength": 40
+        },
+        "photoUrl": { "type": "string", "maxLength": 350000 },
+        "verificationQuestion": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "reporterId", "title", "category", "generalDescription", "color", "brand", "locationFound", "dateFound", "status", "custodyState", "createdAt", "updatedAt"]
+    },
+    "FoundItemPrivate": {
+      "title": "FoundItemPrivate",
+      "description": "Confidential office records and anti-fraud secret details for a found item.",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "secretCharacteristics": { "type": "string", "maxLength": 1000 },
+        "storageLocation": { "type": "string", "maxLength": 160 },
+        "adminNotes": { "type": "string", "maxLength": 1500 },
+        "finderEmail": { "type": "string", "maxLength": 180 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["itemId", "secretCharacteristics", "storageLocation", "adminNotes", "createdAt", "updatedAt"]
+    },
+    "LostReport": {
+      "title": "LostReport",
+      "description": "Private student report for a lost item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userName": { "type": "string", "maxLength": 120 },
+        "userEmail": { "type": "string", "maxLength": 180 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "category": { "type": "string", "maxLength": 60 },
+        "description": { "type": "string", "minLength": 3, "maxLength": 1200 },
+        "color": { "type": "string", "maxLength": 80 },
+        "brand": { "type": "string", "maxLength": 100 },
+        "model": { "type": "string", "maxLength": 100 },
+        "distinguishingCharacteristics": { "type": "string", "maxLength": 800 },
+        "locationLost": { "type": "string", "maxLength": 120 },
+        "dateLost": { "type": "string", "maxLength": 80 },
+        "photoUrl": { "type": "string", "maxLength": 350000 },
+        "status": {
+          "type": "string",
+          "enum": ["SEARCHING", "POSSIBLE MATCH", "MATCH CONFIRMED", "RETURNED", "CLOSED"],
+          "maxLength": 40
+        },
+        "claimStatus": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "category", "description", "color", "brand", "locationLost", "dateLost", "status", "createdAt", "updatedAt"]
+    },
+    "MatchRecord": {
+      "title": "MatchRecord",
+      "description": "AI hybrid match linking a lost report to a found item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "lostReportId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "foundItemId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "studentId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "overallScore": { "type": "number" },
+        "visualSimilarity": { "type": "number" },
+        "textSimilarity": { "type": "number" },
+        "locationSimilarity": { "type": "number" },
+        "timeSimilarity": { "type": "number" },
+        "confidenceLabel": { "type": "string", "maxLength": 80 },
+        "explanationSummary": { "type": "string", "maxLength": 600 },
+        "reasons": { "type": "array" },
+        "verificationPrompt": { "type": "string", "maxLength": 300 },
+        "adminStatus": {
+          "type": "string",
+          "enum": ["PENDING_REVIEW", "APPROVED", "REJECTED"],
+          "maxLength": 40
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "lostReportId", "foundItemId", "studentId", "overallScore", "confidenceLabel", "explanationSummary", "reasons", "adminStatus", "createdAt", "updatedAt"]
+    },
+    "ClaimRecord": {
+      "title": "ClaimRecord",
+      "description": "Ownership verification claim submitted by a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "lostReportId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "foundItemId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "matchId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "studentId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "studentEmail": { "type": "string", "maxLength": 180 },
+        "verificationQuestion": { "type": "string", "maxLength": 300 },
+        "verificationAnswer": { "type": "string", "minLength": 2, "maxLength": 1000 },
+        "additionalProof": { "type": "string", "maxLength": 1000 },
+        "suspiciousFlag": { "type": "boolean" },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "APPROVED", "REJECTED", "RETURNED"],
+          "maxLength": 40
+        },
+        "adminFeedback": { "type": "string", "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "lostReportId", "foundItemId", "studentId", "studentName", "studentEmail", "verificationQuestion", "verificationAnswer", "status", "createdAt", "updatedAt"]
+    },
+    "NotificationRecord": {
+      "title": "NotificationRecord",
+      "description": "In-app notification alerting a student about matches or claim updates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 160 },
+        "message": { "type": "string", "maxLength": 600 },
+        "type": { "type": "string", "enum": ["MATCH_FOUND", "CLAIM_APPROVED", "CLAIM_REJECTED", "ITEM_RETURNED"], "maxLength": 40 },
+        "relatedReportId": { "type": "string", "maxLength": 128 },
+        "relatedMatchId": { "type": "string", "maxLength": 128 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "message", "type", "read", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document restricted to owner and admin."
+    },
+    "/found_items/{itemId}": {
+      "schema": "FoundItem",
+      "description": "Found item inventory stripped of secret verification details."
+    },
+    "/found_items_private/{itemId}": {
+      "schema": "FoundItemPrivate",
+      "description": "Confidential office notes, storage bin location, and anti-fraud secrets."
+    },
+    "/lost_reports/{reportId}": {
+      "schema": "LostReport",
+      "description": "Student lost item reports visible only to the reporting student and admin."
+    },
+    "/matches/{matchId}": {
+      "schema": "MatchRecord",
+      "description": "AI-generated match records linking lost reports to found items."
+    },
+    "/claims/{claimId}": {
+      "schema": "ClaimRecord",
+      "description": "Student ownership verification claims reviewed by the Lost & Found Office."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "NotificationRecord",
+      "description": "Student notifications for possible matches and claim status changes."
+    }
+  }
+}
